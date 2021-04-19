@@ -5,7 +5,7 @@ import multer from 'multer';
 // import formidable from 'formidable'
 import fs from 'fs';
 // import GridFsStorage from 'multer-gridfs-storage';
-// import { promisify } from 'util';
+import { promisify } from 'util';
 import stream from 'stream';
 // import { fileURLToPath } from 'url';
 import BlogPosts from '../models/blogPosts.model.js'
@@ -20,7 +20,7 @@ dotenv.config();
 // const pipeline = promisify(stream.pipeline)
 
 // const __filename = fileURLToPath(import.meta.url)
-// const __dirname = dirname(__filename);
+// const __dirname = dirname();
 // const upload = multer();
 
 const router = express.Router()
@@ -101,28 +101,43 @@ const storage =    multer.diskStorage({
         callback(null, "./../client/public/uploads/images")
     },
     filename: (req, file, callback) => {
-        callback(null, file.originalname)
+        callback(null, req.body.title + file.detectedFileExtension)
     }
 });
 
 
-const upload = multer({ storage: storage })
+// const upload = multer({ storage: storage })
 
-
+const upload = multer();
     
 router.post('/api/blogposts', upload.single('photo'), async(req, res) => {
    
+    
+    // console.log(req.file.originalname)
     const blogPost = new BlogPosts({
         title: req.body.title,
         content: req.body.content,
         photo: req.file.originalname
+        
     });
+
+
+    // const { file, body: { title, content }
+    // } = req
+
+    // const filename = title + file.detectedFileExtension;
     try {
+
+    //     await pipeline(
+    //         file.stream, fs.createWriteStream(`${__dirname}/../client/public/uploads/images/${filename}`)
+    //     )
 
         await blogPost.save().then((post) => {
             res.status(200).send("Post uploaded successfully")
         })
-        // console.log(blogPost)
+
+            // res.send(`post uploaded`)
+        console.log(blogPost)
     } catch (error) {
         res.send(error.message)
         console.log(error)
@@ -157,9 +172,11 @@ router.post('/api/blogposts', upload.single('photo'), async(req, res) => {
 
 
 router.get('/api/blogposts', async (req, res) => {
-             await BlogPosts.deleteMany({})
+            //  await BlogPosts.deleteMany({})
     try {
-              let posts = await BlogPosts.find({})
+        let posts = await BlogPosts.find({})
+        
+        console.log(posts)
         const dateSorted = await posts.sort(
             (a, b) => b.created - a.created
         );
@@ -172,6 +189,7 @@ router.get('/api/blogposts', async (req, res) => {
 
 // single post
 router.get('/api/blogposts/:id', async (req, res) => {
+   
     try {
         let post = await BlogPosts.findById(req.params.id)
         res.status(201).send(post)
